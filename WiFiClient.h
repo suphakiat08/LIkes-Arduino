@@ -1,20 +1,22 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <RTClib.h>
 #include "Display.h"
 
-#define mqtt_server "10.0.0.180"
+#define mqtt_server "192.168.71.11"
 #define mqtt_port 1883
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+RTC_DS1307 rtc;
+
 byte mac[5];
 char serial_char[17];
 String serial_number;
 
-const char* ssid     = "";
-const char* password = "";
 
+void rtc_setup();
 void callback(char* topic, byte* payload, unsigned int length);
 String month(String str);
 
@@ -42,6 +44,7 @@ void connect_wifi() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
+  // rtc_setup();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   WiFi.macAddress(mac);
@@ -55,12 +58,21 @@ void connect_wifi() {
   display_init(serial_char);
 }
 
+void rtc_setup() {
+  if (! rtc.begin()) {
+    while (1);
+  }
+  if (! rtc.isrunning()) {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+}
+
 void connect_mqtt() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     if (client.connect("ESP8266Client")) {
       Serial.println("connected");
-      String pathStr = "/clients/" + serial_number;
+      String pathStr = "/devices/" + serial_number;
       char pathChar[pathStr.length() + 1];
       pathStr.toCharArray(pathChar, pathStr.length() + 1);
 
@@ -88,7 +100,18 @@ String before_update;
 int likes_before = -1;
 int shares_before = -1;
 
+void updateStatus() {
+  char serial[serial_number.length() + 1];
+    serial_number.toCharArray(serial, serial_number.length() + 1);
+    
+    String pathStr = "/devices/admin";
+    char pathChar[pathStr.length() + 1];
+    pathStr.toCharArray(pathChar, pathStr.length() + 1);
+    client.publish(pathChar, serial);
+}
+
 void callback(char* topic, byte* payload, unsigned int length) {
+  
   String json = String((char*)payload);
   boolean change_data = false;
   boolean isLikes_change = false;
@@ -109,7 +132,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   if(change_data) {
     if(root["switch"]) {
-      
+      updateStatus();
       if(likes_before != -1 && shares_before != -1) {
         if(likes_before != root["likes"]) {
           isLikes_change = true;
@@ -138,27 +161,39 @@ void callback(char* topic, byte* payload, unsigned int length) {
       char shares[String(shares_before).length() + 1];
       String(shares_before).toCharArray(shares, sizeof(shares));
      
-      int stock = root["icons"]["stock"] ? root["icons"]["stock"] : -1;
-      int limited = root["icons"]["limited"] ? root["icons"]["limited"] : -1;
+      int stock = root["icons"]["stock"] ? true : false;
+      int limited = root["icons"]["limited"] ? true : false;
       boolean hot_sale = root["icons"]["hot_sale"] ? true : false;
     
-      String promotion[5];
+      String promotion[4];
       if (root["icons"]["promotion"]) {
-        isPromotion = true;
         String date = root["icons"]["promotion"]["date"].as<String>();
-        date = date.substring(date.length() - 2, date.length()) + " " + month(date.substring(5, 7)) + " " + date.substring(0, 4);
+//        int endOffer[] = {
+//          date.substring(6, 10).toInt(),
+//          date.substring(0, 2).toInt(),
+//          date.substring(3, 5).toInt()
+//        };
+//        
+//        DateTime now = rtc.now();
+//
+//        if(now.year() > endOffer[0] || (now.year() == endOffer[0] && now.month() > endOffer[1]) || 
+//            (now.year() == endOffer[0] && now.month() == endOffer[1] && now.day() >= endOffer[2])) {
+          isPromotion = true;
+          date = date.substring(3, 5) + " " + month(date.substring(0, 2)) + " " + date.substring(6, 10);
         
-        promotion[0] = root["icons"]["promotion"]["amount"].as<String>();
-        promotion[1] = root["icons"]["promotion"]["unit"].as<String>();
-        promotion[2] = date;
-        promotion[3] = root["icons"]["promotion"]["time"].as<String>();
-        promotion[4] = promotion[1] == "baht" ?
-           (int)root["price"] - (int)root["icons"]["promotion"]["amount"] :
-           (int)((int)root["price"] - ((double)root["icons"]["promotion"]["amount"] / 100) * (int)root["price"]);
-  
-        for (int i = promotion[4].length() - 3; i > 0 ; i -= 3) {
-          promotion[4] = promotion[4].substring(0, i) + "," + promotion[4].substring(i, promotion[4].length());
-        }
+          promotion[0] = root["icons"]["promotion"]["amount"].as<String>();
+          promotion[1] = root["icons"]["promotion"]["unit"].as<String>();
+          promotion[2] = date;
+          promotion[3] = promotion[1] == "baht" ?
+             (int)root["price"] - (int)root["icons"]["promotion"]["amount"] :
+             (int)((int)root["price"] - ((double)root["icons"]["promotion"]["amount"] / 100) * (int)root["price"]);
+    
+          for (int i = promotion[3].length() - 3; i > 0 ; i -= 3) {
+            promotion[3] = promotion[3].substring(0, i) + "," + promotion[3].substring(i, promotion[3].length());
+          }
+//        } else {
+//          isPromotion = false;
+//        }
       }
   
       int option;
@@ -173,9 +208,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
           
       } else if(hot_sale) {
         option = 1;
-      } else if(limited > 0) {
+      } else if(limited) {
         option = 2;
-      } else if (stock > 0) {
+      } else if (stock) {
         option = 3;
       } else {
         option = 0;
@@ -196,6 +231,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
       shares_before = -1;
       
       display_init(serial_char);
+    }
+  } else {
+    if(root["switch"]) {
+      updateStatus();
     }
   }
 }

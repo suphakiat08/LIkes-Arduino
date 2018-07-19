@@ -54,8 +54,8 @@ void display_page(char* prod_name, char* price, char* likes, char* shares, Strin
   display.println(prod_name);
 
   // box for likes, share and option
-  display.drawBitmap(box, 15, 48, 115, 49, GxEPD_RED);
-  display.drawBitmap(box, 135, 48, 115, 49, GxEPD_RED);
+  display.drawBitmap(box, 15, 48, 114, 48, GxEPD_RED);
+  display.drawBitmap(box, 135, 48, 114, 48, GxEPD_RED);
   display.setFont(&AGENCYR16pt7b);
   
   if (type == 0) {
@@ -122,8 +122,8 @@ void display_page(char* prod_name, char* price, char* likes, char* shares, Strin
     display.println("B");
 
     // convert discounts to char*
-    char discounts[promotion[4].length() + 1];
-    promotion[4].toCharArray(discounts, sizeof(discounts));
+    char discounts[promotion[3].length() + 1];
+    promotion[3].toCharArray(discounts, sizeof(discounts));
     
     // price
     display.setTextColor(GxEPD_RED);
