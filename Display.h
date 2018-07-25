@@ -53,12 +53,13 @@ void display_page(char* prod_name, char* price, char* likes, char* shares, Strin
   display.setCursor(15, 35);
   display.println(prod_name);
 
-  // box for likes, share and option
-  display.drawBitmap(box, 15, 48, 114, 48, GxEPD_RED);
+  // box right  
   display.drawBitmap(box, 135, 48, 114, 48, GxEPD_RED);
   display.setFont(&AGENCYR16pt7b);
   
   if (type == 0) {
+    // box left
+    display.drawBitmap(box, 15, 48, 114, 48, GxEPD_RED);
     // likes icon
     display.drawBitmap(likes_icons, 30, 59, 27, 27, GxEPD_BLACK);
     // likes count
@@ -87,6 +88,8 @@ void display_page(char* prod_name, char* price, char* likes, char* shares, Strin
       display.setCursor(50, 84);
       display.println("Sale");
     }
+    display.drawBitmap(limited_icons, 15, 48, 48, 48, GxEPD_RED);
+    display.drawBitmap(cleance_icons, 68, 48, 48, 48, GxEPD_RED);
     
     // likes icon
     display.drawBitmap(likes_icons, 150, 59, 27, 27, GxEPD_BLACK);

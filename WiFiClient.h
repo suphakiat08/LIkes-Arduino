@@ -1,22 +1,23 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <RTClib.h>
 #include "Display.h"
 
-#define mqtt_server "192.168.71.11"
+#define mqtt_server "10.0.0.195"
 #define mqtt_port 1883
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-RTC_DS1307 rtc;
 
 byte mac[5];
 char serial_char[17];
 String serial_number;
 
+const char* ssid     = "Embedded_2.4G";
+const char* password = "smartembedded802";
+//const char* ssid  = "Scerets";
+//const char* password = "025325017";
 
-void rtc_setup();
 void callback(char* topic, byte* payload, unsigned int length);
 String month(String str);
 
@@ -44,7 +45,6 @@ void connect_wifi() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  // rtc_setup();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   WiFi.macAddress(mac);
@@ -56,15 +56,6 @@ void connect_wifi() {
 
   serial_number.toCharArray(serial_char, 17);
   display_init(serial_char);
-}
-
-void rtc_setup() {
-  if (! rtc.begin()) {
-    while (1);
-  }
-  if (! rtc.isrunning()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
 }
 
 void connect_mqtt() {
@@ -104,7 +95,7 @@ void updateStatus() {
   char serial[serial_number.length() + 1];
     serial_number.toCharArray(serial, serial_number.length() + 1);
     
-    String pathStr = "/devices/admin";
+    String pathStr = "/devices/heartbeat";
     char pathChar[pathStr.length() + 1];
     pathStr.toCharArray(pathChar, pathStr.length() + 1);
     client.publish(pathChar, serial);
@@ -168,16 +159,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
       String promotion[4];
       if (root["icons"]["promotion"]) {
         String date = root["icons"]["promotion"]["date"].as<String>();
-//        int endOffer[] = {
-//          date.substring(6, 10).toInt(),
-//          date.substring(0, 2).toInt(),
-//          date.substring(3, 5).toInt()
-//        };
-//        
-//        DateTime now = rtc.now();
-//
-//        if(now.year() > endOffer[0] || (now.year() == endOffer[0] && now.month() > endOffer[1]) || 
-//            (now.year() == endOffer[0] && now.month() == endOffer[1] && now.day() >= endOffer[2])) {
           isPromotion = true;
           date = date.substring(3, 5) + " " + month(date.substring(0, 2)) + " " + date.substring(6, 10);
         
@@ -191,9 +172,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
           for (int i = promotion[3].length() - 3; i > 0 ; i -= 3) {
             promotion[3] = promotion[3].substring(0, i) + "," + promotion[3].substring(i, promotion[3].length());
           }
-//        } else {
-//          isPromotion = false;
-//        }
       }
   
       int option;
