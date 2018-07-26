@@ -41,7 +41,7 @@ void display_init(char* serial_char) {
 }
 
 // display 1 no option
-void display_page(char* prod_name, char* price, char* likes, char* shares, String* promotion, int type) {
+void display_page(char* prod_name, char* price, char* likes, char* shares, String* promotion, boolean* option) {
   // set background
   display.fillScreen(GxEPD_RED);
   display.fillRect(0, 105, 264, 75, GxEPD_WHITE);
@@ -53,13 +53,13 @@ void display_page(char* prod_name, char* price, char* likes, char* shares, Strin
   display.setCursor(15, 35);
   display.println(prod_name);
 
-  // box right  
-  display.drawBitmap(box, 135, 48, 114, 48, GxEPD_RED);
   display.setFont(&AGENCYR16pt7b);
   
-  if (type == 0) {
+  if (!option[0] && !option[1] && !option[2]) {
     // box left
     display.drawBitmap(box, 15, 48, 114, 48, GxEPD_RED);
+    // box right  
+    display.drawBitmap(box, 135, 48, 114, 48, GxEPD_RED);
     // likes icon
     display.drawBitmap(likes_icons, 30, 59, 27, 27, GxEPD_BLACK);
     // likes count
@@ -74,32 +74,68 @@ void display_page(char* prod_name, char* price, char* likes, char* shares, Strin
     display.println(shares);
     
   } else {
+    int count_option = 0;
+    int position[2][2] = {
+      {18, 48},
+      {75, 48}
+    };
     display.setTextColor(GxEPD_RED);
-    if (type == 1 || type == 5) {
-      display.setCursor(30, 84);
-      display.println("Hot Sale");
-    } else if (type == 2 || type == 6) {
-      display.setCursor(38, 84);
-      display.println("Limited");
-    } else if (type == 3 || type == 7) {
-      display.setCursor(22, 84);
-      display.println("Clearance");
+
+    if((option[0] && !option[1] && !option[2]) || (!option[0] && option[1] && !option[2]) || 
+          (!option[0] && !option[1] && option[2])) {
+      if(option[0]) {
+        display.drawBitmap(hot_sale, position[0][0], position[0][1], 48, 48, GxEPD_RED);
+      } else if(option[1]) {
+        display.drawBitmap(limited_icons, position[0][0], position[0][1], 48, 48, GxEPD_RED);
+      } else {
+        display.drawBitmap(cleance_icons, position[0][0], position[0][1], 48, 48, GxEPD_RED);
+      }
+
+      // box right  
+      display.drawBitmap(box, 72, 48, 114, 48, GxEPD_RED);
+      display.drawBitmap(box, 134, 48, 114, 48, GxEPD_RED);
+      display.fillRect(130, 48, 5, 48, GxEPD_WHITE);
+      // likes icon
+      display.drawBitmap(likes_icons, 117, 59, 27, 27, GxEPD_BLACK);
+      // likes count
+      display.setCursor(162, 84);
+      
     } else {
-      display.setCursor(50, 84);
-      display.println("Sale");
+      if(option[0]) {
+        display.drawBitmap(hot_sale, position[1][0], position[1][1], 48, 48, GxEPD_RED);
+        count_option++;
+      }
+      
+      if(option[1]) {
+        if(count_option == 0) {
+          display.drawBitmap(limited_icons, position[1][0], position[1][1], 48, 48, GxEPD_RED);
+        } else if(count_option == 1) {
+          display.drawBitmap(limited_icons, position[0][0], position[0][1], 48, 48, GxEPD_RED);
+        }
+        count_option++;
+      }
+  
+      if(option[2]) {
+        if(count_option == 0) {
+          display.drawBitmap(cleance_icons, position[1][0], position[1][1], 48, 48, GxEPD_RED);
+        } else if(count_option == 1) {
+          display.drawBitmap(cleance_icons, position[0][0], position[0][1], 48, 48, GxEPD_RED);
+        }
+        count_option++;
+      }
+
+      // box right  
+      display.drawBitmap(box, 132, 48, 114, 48, GxEPD_RED);
+      // likes icon
+      display.drawBitmap(likes_icons, 147, 59, 27, 27, GxEPD_BLACK);
+      // likes count
+      display.setCursor(192, 84);
     }
-    display.drawBitmap(limited_icons, 15, 48, 48, 48, GxEPD_RED);
-    display.drawBitmap(cleance_icons, 68, 48, 48, 48, GxEPD_RED);
-    
-    // likes icon
-    display.drawBitmap(likes_icons, 150, 59, 27, 27, GxEPD_BLACK);
-    // likes count
     display.setTextColor(GxEPD_BLACK);
-    display.setCursor(195, 84);
     display.println(likes);
   }
 
-  if (type < 4) {
+  if (!option[3]) {
     // line from Baht symbol
     display.fillRect(22, 112, 3, 57, GxEPD_BLACK);
     display.fillRect(22, 117, 3, 48, GxEPD_WHITE);
@@ -174,14 +210,22 @@ void display_page(char* prod_name, char* price, char* likes, char* shares, Strin
 }
 
 // display 1 refresh likes
-void display_refresh_likes(char* likes) {
+void display_refresh_likes(char* likes, boolean* option) {
   display.setTextColor(GxEPD_BLACK);
   display.setFont(&AGENCYR16pt7b);
-  
-  display.fillRect(180, 52, 70, 40, GxEPD_WHITE);
-  display.setCursor(195, 84);
-  display.println(likes);
-  display.updateWindow(134, 48, 115, 48);
+
+  if((option[0] && !option[1] && !option[2]) || (!option[0] && option[1] && !option[2]) || 
+          (!option[0] && !option[1] && option[2])) {
+    display.fillRect(150, 52, 67, 37, GxEPD_WHITE);
+    display.setCursor(162, 84);
+    display.println(likes);
+    display.updateWindow(71, 48, 176, 48);
+  } else {
+    display.fillRect(180, 52, 67, 37, GxEPD_WHITE);
+    display.setCursor(192, 84);
+    display.println(likes);
+    display.updateWindow(131, 48, 114, 48);
+  }
 }
 
 // display 1 refresh likes or share
@@ -193,12 +237,12 @@ void display_refresh_likes_share(int type, char* content) {
     display.fillRect(60, 52, 70, 40, GxEPD_WHITE);
     display.setCursor(75, 84);
     display.println(content);
-    display.updateWindow(14, 48, 115, 48);
+    display.updateWindow(14, 48, 114, 48);
   } else {
     display.fillRect(180, 52, 70, 40, GxEPD_WHITE);
     display.setCursor(195, 84);
     display.println(content);
-    display.updateWindow(134, 48, 115, 48);
+    display.updateWindow(134, 48, 114, 48);
   }
 }
 

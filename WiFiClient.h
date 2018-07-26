@@ -174,31 +174,44 @@ void callback(char* topic, byte* payload, unsigned int length) {
           }
       }
   
-      int option;
-      if(isPromotion) {
-        option = 4;
-        hot_sale ?
-          option += 1:
-        limited > 0 ?
-          option += 2:
-        stock > 0 ?
-          option += 3: 0;
-          
-      } else if(hot_sale) {
-        option = 1;
-      } else if(limited) {
-        option = 2;
-      } else if (stock) {
-        option = 3;
-      } else {
-        option = 0;
-      }
+//      int option;
+//      if(isPromotion) {
+//        option = 4;
+//        hot_sale ?
+//          option += 1:
+//        limited > 0 ?
+//          option += 2:
+//        stock > 0 ?
+//          option += 3: 0;
+//          
+//      } else if(hot_sale) {
+//        option = 1;
+//      } else if(limited) {
+//        option = 2;
+//      } else if (stock) {
+//        option = 3;
+//      } else {
+//        option = 0;
+//      }
+
+      boolean option[4];
+      option[0] = (hot_sale) ?
+         true: false;
+         
+      option[1] = (limited) ?
+        true: false;
+        
+      option[2] = (stock) ?
+        true: false;
+
+      option[3] = isPromotion;
+      
       if(isLikes_change || isShares_change) {
-        if(option == 0) {
+        if(!option[0] && !option[1] && !option[2]) {
           if(isLikes_change) display_refresh_likes_share(0, likes);
           if(isShares_change) display_refresh_likes_share(1, shares);
         } else {
-          if(isLikes_change) display_refresh_likes(likes);
+          if(isLikes_change) display_refresh_likes(likes, option);
         }
       } else {
         display_page(prod_name, price, likes, shares, promotion, option);
